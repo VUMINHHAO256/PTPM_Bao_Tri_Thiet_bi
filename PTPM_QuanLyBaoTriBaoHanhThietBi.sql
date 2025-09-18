@@ -1,0 +1,123 @@
+﻿CREATE DATABASE PTPM_QuanLyBaoTriBaoHanhThietBi;
+GO
+USE PTPM_QuanLyBaoTriBaoHanhThietBi;
+GO
+-- =============================
+-- Bảng: Khách hàng
+-- =============================
+CREATE TABLE KhachHang (
+    MaKhachHang INT PRIMARY KEY IDENTITY(1,1),
+    TenKhachHang NVARCHAR(200) NOT NULL,
+    DiaChi NVARCHAR(300),
+    DienThoai NVARCHAR(50),
+    Email NVARCHAR(150)
+);
+
+-- =============================
+-- Bảng: Tài sản (Thiết bị)
+-- =============================
+CREATE TABLE TaiSan (
+    MaTaiSan INT PRIMARY KEY IDENTITY(1,1),
+    MaSoTaiSan VARCHAR(50) UNIQUE NOT NULL,
+    TenTaiSan NVARCHAR(255) NOT NULL,
+    SoSerial NVARCHAR(100),
+    LoaiTaiSan NVARCHAR(100),
+    NgayMua DATE,
+    HanBaoHanh DATE,
+    TrangThai NVARCHAR(50) DEFAULT 'HoatDong', -- HoatDong, Ngung, DangBaoTri
+    MaKhachHang INT NULL, -- liên kết thiết bị với khách hàng
+    FOREIGN KEY (MaKhachHang) REFERENCES KhachHang(MaKhachHang)
+);
+
+-- =============================
+-- Bảng: Nhân viên kỹ thuật
+-- =============================
+CREATE TABLE KyThuatVien (
+    MaKyThuatVien INT PRIMARY KEY IDENTITY(1,1),
+    HoTen NVARCHAR(200) NOT NULL,
+    Email NVARCHAR(150),
+    DienThoai NVARCHAR(50),
+    VaiTro NVARCHAR(50) -- Admin, KyThuat, NguoiDung
+);
+
+-- =============================
+-- Bảng: Yêu cầu bảo hành
+-- =============================
+CREATE TABLE YeuCauBaoHanh (
+    MaYeuCau INT PRIMARY KEY IDENTITY(1,1),
+    MaTaiSan INT NOT NULL,
+    NgayYeuCau DATETIME DEFAULT GETDATE(),
+    MoTaLoi NVARCHAR(500),
+    TrangThai NVARCHAR(50) DEFAULT 'ChoXuLy', -- ChoXuLy, DangXuLy, HoanThanh
+    MaKyThuatVien INT NULL,
+    FOREIGN KEY (MaTaiSan) REFERENCES TaiSan(MaTaiSan),
+    FOREIGN KEY (MaKyThuatVien) REFERENCES KyThuatVien(MaKyThuatVien)
+);
+
+-- =============================
+-- Bảng: Lịch bảo trì định kỳ
+-- =============================
+CREATE TABLE LichBaoTri (
+    MaLich INT PRIMARY KEY IDENTITY(1,1),
+    MaTaiSan INT NOT NULL,
+    TanSuat NVARCHAR(50), -- HangThang, HangQuy, HangNam
+    NgayKeTiep DATE,
+    Checklist NVARCHAR(1000),
+    FOREIGN KEY (MaTaiSan) REFERENCES TaiSan(MaTaiSan)
+);
+
+-- =============================
+-- Bảng: Phiếu bảo trì
+-- =============================
+CREATE TABLE PhieuBaoTri (
+    MaPhieu INT PRIMARY KEY IDENTITY(1,1),
+    MaLich INT NULL,
+    MaTaiSan INT NOT NULL,
+    NgayLap DATE DEFAULT GETDATE(),
+    TrangThai NVARCHAR(50) DEFAULT 'Mo', -- Mo, DangXuLy, HoanThanh, Dong
+    KetQua NVARCHAR(500),
+    MaKyThuatVien INT NULL,
+    FOREIGN KEY (MaTaiSan) REFERENCES TaiSan(MaTaiSan),
+    FOREIGN KEY (MaLich) REFERENCES LichBaoTri(MaLich),
+    FOREIGN KEY (MaKyThuatVien) REFERENCES KyThuatVien(MaKyThuatVien)
+);
+
+-- =============================
+-- Bảng: Linh kiện
+-- =============================
+CREATE TABLE LinhKien (
+    MaLinhKien INT PRIMARY KEY IDENTITY(1,1),
+    MaSoLinhKien VARCHAR(50) UNIQUE NOT NULL,
+    TenLinhKien NVARCHAR(200) NOT NULL,
+    MoTa NVARCHAR(255),
+    SoLuong INT NOT NULL DEFAULT 0,
+    DonGia DECIMAL(18,2),
+    ViTri NVARCHAR(100)
+);
+
+-- =============================
+-- Bảng: Sử dụng linh kiện trong phiếu bảo trì
+-- =============================
+CREATE TABLE SuDungLinhKien (
+    MaSuDung INT PRIMARY KEY IDENTITY(1,1),
+    MaPhieu INT NOT NULL,
+    MaLinhKien INT NOT NULL,
+    SoLuong INT NOT NULL,
+    Loai NVARCHAR(50), -- Nhap, Xuat
+    FOREIGN KEY (MaPhieu) REFERENCES PhieuBaoTri(MaPhieu),
+    FOREIGN KEY (MaLinhKien) REFERENCES LinhKien(MaLinhKien)
+);
+
+-- =============================
+-- Bảng: Nhật ký hệ thống (Audit Logs)
+-- =============================
+CREATE TABLE NhatKyHeThong (
+    MaNhatKy INT PRIMARY KEY IDENTITY(1,1),
+    LoaiThucThe NVARCHAR(50), -- TaiSan, YeuCauBaoHanh, PhieuBaoTri...
+    MaThucThe INT,
+    HanhDong NVARCHAR(50), -- Tao, CapNhat, Xoa, DoiTrangThai
+    GiaTriCu NVARCHAR(500),
+    GiaTriMoi NVARCHAR(500),
+    NguoiThayDoi NVARCHAR(100),
+    ThoiGian DATETIME DEFAULT GETDATE()
+);
